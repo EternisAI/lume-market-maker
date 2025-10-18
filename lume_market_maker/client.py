@@ -11,7 +11,7 @@ from lume_market_maker.constants import (
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
 from lume_market_maker.order_builder import OrderBuilder
-from lume_market_maker.types import Market, Order, OrderArgs, OrderBook, OrderBookLevel, OrderType, Outcome, SignedOrder
+from lume_market_maker.types import Event, Market, Order, OrderArgs, OrderBook, OrderBookLevel, OrderType, Outcome, SignedOrder
 
 
 class LumeClient:
@@ -420,3 +420,199 @@ class LumeClient:
             return data["cancelOrder"]
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse cancel order response: {e}") from e
+
+    def get_all_events(
+        self,
+        first: Optional[int] = None,
+        after: Optional[str] = None,
+        category: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        status: Optional[str] = None,
+    ) -> list[Event]:
+        """
+        Get all events from the API.
+
+        Args:
+            first: Maximum number of events to return (None for all)
+            after: Pagination cursor (event ID to start after)
+            category: Filter by category
+            tags: Filter by tags
+            status: Filter by status (ACTIVE, RESOLVED, CANCELLED)
+
+        Returns:
+            List of Event objects
+
+        Raises:
+            GraphQLError: If the query fails
+        """
+        query = """
+        query($first: Int, $after: ID, $category: String, $tags: [String!], $status: EventStatus) {
+            events(first: $first, after: $after, category: $category, tags: $tags, status: $status) {
+                events {
+                    id
+                    slug
+                    title
+                    resolutionCriteria
+                    startDate
+                    endDate
+                    createdAt
+                    imageUrl
+                    status
+                    volume
+                    liquidity
+                    openInterest
+                    category
+                    tags
+                    markets {
+                        id
+                        slug
+                        question
+                        status
+                        volume
+                        liquidity
+                        openInterest
+                        outcomes {
+                            id
+                            label
+                            tokenId
+                        }
+                    }
+                }
+            }
+        }
+        """
+        variables = {
+            "first": first,
+            "after": after,
+            "category": category,
+            "tags": tags,
+            "status": status,
+        }
+
+        try:
+            data = self.graphql.query(query, variables)
+            events_data = data.get("events", {}).get("events", [])
+
+            events = []
+            for e in events_data:
+                markets = []
+                for m in e.get("markets", []):
+                    outcomes = [
+                        Outcome(
+                            id=o["id"],
+                            label=o["label"],
+                            token_id=o["tokenId"],
+                        )
+                        for o in m.get("outcomes", [])
+                        if o.get("id")
+                    ]
+                    markets.append(
+                        Market(
+                            id=m["id"],
+                            outcomes=outcomes,
+                            slug=m.get("slug"),
+                            question=m.get("question"),
+                            status=m.get("status"),
+                            volume=m.get("volume"),
+                            liquidity=m.get("liquidity"),
+                            open_interest=m.get("openInterest"),
+                        )
+                    )
+
+                events.append(
+                    Event(
+                        id=e["id"],
+                        slug=e["slug"],
+                        title=e["title"],
+                        status=e["status"],
+                        category=e["category"],
+                        tags=e.get("tags", []),
+                        markets=markets,
+                        resolution_criteria=e.get("resolutionCriteria"),
+                        start_date=e.get("startDate"),
+                        end_date=e.get("endDate"),
+                        created_at=e.get("createdAt"),
+                        image_url=e.get("imageUrl"),
+                        volume=e.get("volume"),
+                        liquidity=e.get("liquidity"),
+                        open_interest=e.get("openInterest"),
+                    )
+                )
+
+            return events
+        except (KeyError, TypeError) as e:
+            raise GraphQLError(f"Failed to parse events data from response: {e}") from e
+
+    def get_all_markets(
+        self,
+        event_id: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> list[Market]:
+        """
+        Get all markets from the API.
+
+        Args:
+            event_id: Filter by event ID (None for all markets)
+            status: Filter by status (ACTIVE, RESOLVED, CANCELLED)
+
+        Returns:
+            List of Market objects
+
+        Raises:
+            GraphQLError: If the query fails
+        """
+        query = """
+        query($eventId: ID, $status: MarketStatus) {
+            markets(eventId: $eventId, status: $status) {
+                id
+                slug
+                question
+                status
+                volume
+                liquidity
+                openInterest
+                outcomes {
+                    id
+                    label
+                    tokenId
+                }
+            }
+        }
+        """
+        variables = {
+            "eventId": event_id,
+            "status": status,
+        }
+
+        try:
+            data = self.graphql.query(query, variables)
+            markets_data = data.get("markets", [])
+
+            markets = []
+            for m in markets_data:
+                outcomes = [
+                    Outcome(
+                        id=o["id"],
+                        label=o["label"],
+                        token_id=o["tokenId"],
+                    )
+                    for o in m.get("outcomes", [])
+                    if o.get("id")
+                ]
+
+                markets.append(
+                    Market(
+                        id=m["id"],
+                        outcomes=outcomes,
+                        slug=m.get("slug"),
+                        question=m.get("question"),
+                        status=m.get("status"),
+                        volume=m.get("volume"),
+                        liquidity=m.get("liquidity"),
+                        open_interest=m.get("openInterest"),
+                    )
+                )
+
+            return markets
+        except (KeyError, TypeError) as e:
+            raise GraphQLError(f"Failed to parse markets data from response: {e}") from e

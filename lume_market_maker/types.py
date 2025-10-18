@@ -69,6 +69,32 @@ class Market:
     """Market data."""
     id: str
     outcomes: list[Outcome]
+    slug: str | None = None
+    question: str | None = None
+    status: str | None = None
+    volume: str | None = None
+    liquidity: str | None = None
+    open_interest: str | None = None
+
+
+@dataclass
+class Event:
+    """Event data."""
+    id: str
+    slug: str
+    title: str
+    status: str
+    category: str
+    tags: list[str]
+    markets: list[Market]
+    resolution_criteria: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    created_at: str | None = None
+    image_url: str | None = None
+    volume: str | None = None
+    liquidity: str | None = None
+    open_interest: str | None = None
 
 
 @dataclass

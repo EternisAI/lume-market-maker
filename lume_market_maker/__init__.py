@@ -2,6 +2,8 @@
 
 from lume_market_maker.client import LumeClient
 from lume_market_maker.types import (
+    Event,
+    Market,
     Order,
     OrderArgs,
     OrderBook,
@@ -9,12 +11,13 @@ from lume_market_maker.types import (
     OrderSide,
     OrderType,
     Outcome,
-    Market,
 )
 
 __version__ = "0.1.0"
 __all__ = [
     "LumeClient",
+    "Event",
+    "Market",
     "Order",
     "OrderArgs",
     "OrderBook",
@@ -22,5 +25,4 @@ __all__ = [
     "OrderSide",
     "OrderType",
     "Outcome",
-    "Market",
 ]
