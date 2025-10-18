@@ -14,13 +14,13 @@ Python SDK for interacting with Lume prediction markets. Built with EIP-712 sign
 ### From GitHub
 
 ```bash
-pip install git+https://github.com/yourusername/lume-market-maker.git
+pip install git+https://github.com/EternisAI/lume-market-maker.git
 ```
 
 Or with uv:
 
 ```bash
-uv pip install git+https://github.com/yourusername/lume-market-maker.git
+uv pip install git+https://github.com/EternisAI/lume-market-maker.git
 ```
 
 ### From Local Directory
@@ -299,6 +299,7 @@ Get market information including outcomes.
 Get orderbook for a specific market outcome.
 
 **Parameters:**
+
 - `market_id`: Market UUID
 - `outcome`: Outcome label (e.g., "YES", "NO")
 
