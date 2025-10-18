@@ -8,9 +8,6 @@ Python SDK for interacting with Lume prediction markets. Built with EIP-712 sign
 - Get order details and status
 - Fetch orderbook data
 - Cancel orders
-- EIP-712 typed data signing (compatible with Polymarket standard)
-- Proxy wallet architecture
-- Type-safe interfaces
 
 ## Installation
 
@@ -42,11 +39,10 @@ uv pip install -e .
 
 ### Setup
 
-Set your environment variables:
+Set your environment variable:
 
 ```bash
 export PRIVATE_KEY="your_private_key_here"
-export MARKET_ID="market_uuid_here"
 ```
 
 ### Initialize Client
@@ -371,7 +367,6 @@ Run examples with:
 
 ```bash
 export PRIVATE_KEY="your_private_key"
-export MARKET_ID="market_uuid"
 
 uv run examples/place_buy_order.py
 uv run examples/place_sell_order.py
@@ -411,28 +406,6 @@ shares = float(order.shares) / 1_000_000  # "10000000" -> 10.0
 - Chain ID: 84532
 - Exchange Address: `0xCf4a367D980a8FB9D4d64a3851C3b77FE3801f97`
 - API URL: `https://server-graphql-dev.up.railway.app/query`
-
-## EIP-712 Signing
-
-Orders are signed using EIP-712 typed data standard, compatible with Polymarket:
-
-- Domain: `{"name": "CTFExchange", "version": "1", "chainId": 84532, "verifyingContract": "0xCf4a..."}`
-- Order structure includes: salt, maker, signer, taker, tokenId, amounts, expiration, nonce, fees, side, signatureType
-
-## Error Handling
-
-All methods raise `GraphQLError` on API failures:
-
-```python
-from lume_market_maker.graphql import GraphQLError
-
-try:
-    response = client.create_and_place_order(order_args)
-except GraphQLError as e:
-    print(f"API error: {e}")
-except ValueError as e:
-    print(f"Validation error: {e}")
-```
 
 ## License
 
