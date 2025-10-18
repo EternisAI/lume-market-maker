@@ -37,6 +37,10 @@ uv pip install -e .
 
 ## Quick Start
 
+### Prerequisites
+
+Before using the API, you should login to the Lume platform and create a proxy wallet.
+
 ### Setup
 
 Set your environment variable:
