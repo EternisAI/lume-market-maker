@@ -19,17 +19,10 @@ def main():
     print("Initializing Lume client...")
     client = LumeClient(private_key=private_key)
 
-    # Get market to find outcome ID
-    print(f"\nFetching market: {market_id}")
-    market = client.get_market(market_id)
-
-    # Use first outcome (usually YES)
-    outcome = market.outcomes[0]
-    print(f"Fetching orderbook for outcome: {outcome.label}")
-
     # Get orderbook
+    print(f"\nFetching orderbook for market: {market_id}")
     try:
-        orderbook = client.get_orderbook(market_id=market_id, outcome_id=outcome.id)
+        orderbook = client.get_orderbook(market_id=market_id, outcome="YES")
 
         print(f"\n{'Orderbook':<30s}: {orderbook.outcome.label}")
         print(f"{'Outcome ID':<30s}: {orderbook.outcome.id}")

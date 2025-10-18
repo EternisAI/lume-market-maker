@@ -325,20 +325,24 @@ class LumeClient:
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse order data from response: {e}") from e
 
-    def get_orderbook(self, market_id: str, outcome_id: str) -> OrderBook:
+    def get_orderbook(self, market_id: str, outcome: str) -> OrderBook:
         """
         Get order book for a market outcome.
 
         Args:
             market_id: Market UUID
-            outcome_id: Outcome UUID
+            outcome: Outcome label (e.g., "YES", "NO")
 
         Returns:
             Order book data
 
         Raises:
             GraphQLError: If the query fails
+            ValueError: If outcome not found
         """
+        # Resolve outcome from label
+        resolved_outcome = self._resolve_outcome(market_id, outcome)
+
         query = """
         query($marketId: ID!, $outcomeId: ID!) {
             orderBook(marketId: $marketId, outcomeId: $outcomeId) {
@@ -358,13 +362,13 @@ class LumeClient:
             }
         }
         """
-        variables = {"marketId": market_id, "outcomeId": outcome_id}
+        variables = {"marketId": market_id, "outcomeId": resolved_outcome.id}
 
         try:
             data = self.graphql.query(query, variables)
             orderbook_data = data["orderBook"]
 
-            outcome = Outcome(
+            outcome_data = Outcome(
                 id=orderbook_data["outcome"]["id"],
                 label=orderbook_data["outcome"]["label"],
                 token_id=orderbook_data["outcome"]["tokenId"],
@@ -380,7 +384,7 @@ class LumeClient:
                 for a in orderbook_data["asks"]
             ]
 
-            return OrderBook(outcome=outcome, bids=bids, asks=asks)
+            return OrderBook(outcome=outcome_data, bids=bids, asks=asks)
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse orderbook data from response: {e}") from e
 

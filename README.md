@@ -166,14 +166,10 @@ from lume_market_maker import LumeClient
 
 client = LumeClient(private_key="your_private_key")
 
-# Get market first to find outcome ID
-market = client.get_market("market_uuid")
-outcome = market.outcomes[0]  # First outcome (e.g., YES)
-
 # Fetch orderbook
 orderbook = client.get_orderbook(
     market_id="market_uuid",
-    outcome_id=outcome.id
+    outcome="YES"  # Outcome label
 )
 
 print(f"Outcome: {orderbook.outcome.label}")
@@ -244,8 +240,7 @@ print(f"Order status: {order.status}")
 print(f"Filled: {float(order.filled_shares) / 1_000_000:.2f} shares")
 
 # Get orderbook
-market = client.get_market(market_id)
-orderbook = client.get_orderbook(market_id, market.outcomes[0].id)
+orderbook = client.get_orderbook(market_id, "YES")
 print(f"\nOrderbook has {len(orderbook.bids)} bids and {len(orderbook.asks)} asks")
 
 # Cancel order if needed
@@ -299,9 +294,13 @@ Get market information including outcomes.
 
 **Returns:** `Market` object with outcomes list
 
-##### `get_orderbook(market_id: str, outcome_id: str) -> OrderBook`
+##### `get_orderbook(market_id: str, outcome: str) -> OrderBook`
 
 Get orderbook for a specific market outcome.
+
+**Parameters:**
+- `market_id`: Market UUID
+- `outcome`: Outcome label (e.g., "YES", "NO")
 
 **Returns:** `OrderBook` object with bids and asks
 
