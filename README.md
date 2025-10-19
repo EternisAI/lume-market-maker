@@ -366,16 +366,39 @@ The `examples/` directory contains complete working examples:
 - `place_buy_order.py` - Place a buy order and fetch details
 - `place_sell_order.py` - Place a sell order and fetch details
 - `get_orderbook.py` - Fetch and display orderbook data
+- `populate_orderbook.py` - Populate orderbook with realistic spread (market making)
 
 Run examples with:
 
 ```bash
 export PRIVATE_KEY="your_private_key"
+export MARKET_ID="your_market_id"
 
 uv run examples/place_buy_order.py
 uv run examples/place_sell_order.py
 uv run examples/get_orderbook.py
 ```
+
+### Market Making Example
+
+The `populate_orderbook.py` script creates multiple orders at different price levels to simulate a real orderbook:
+
+```bash
+# Test in dry-run mode first
+export PRIVATE_KEY="your_private_key"
+export MARKET_ID="your_market_id"
+export INITIAL_YES_PRICE="0.55"
+export TOTAL_CAPITAL="1000"
+export TOTAL_YES_SHARES="1000"
+
+uv run examples/populate_orderbook.py
+
+# Then place real orders
+export DRY_RUN="false"
+uv run examples/populate_orderbook.py
+```
+
+See [`examples/ORDERBOOK_POPULATION.md`](examples/ORDERBOOK_POPULATION.md) for detailed documentation.
 
 ## Decimal Precision
 
