@@ -6,12 +6,14 @@ from enum import Enum
 
 class OrderSide(str, Enum):
     """Order side enum."""
+
     BUY = "BUY"
     SELL = "SELL"
 
 
 class OrderType(str, Enum):
     """Order type enum."""
+
     LIMIT = "LIMIT"
 
 
@@ -26,18 +28,18 @@ class OrderArgs:
         outcome: Outcome label (e.g., "YES", "NO", or any custom outcome label)
         price: Price per share in decimal format (0.01 to 0.99)
         size: Number of shares in decimal format (e.g., 10.5 shares)
-        expiration: Optional unix timestamp for order expiration (default: None = 1 day from now)
+        expiration: Optional unix timestamp for order expiration (default: None = 0)
     """
+
     market_id: str
     side: OrderSide
     outcome: str  # Outcome label like "YES", "NO", etc.
     price: float
     size: float
-    expiration: int | None = None  # Optional unix timestamp (None = 1 day from now)
+    expiration: int | None = None  # Optional unix timestamp (None = 0)
 
     def print_order(self) -> None:
         """Print formatted order details."""
-        import time
         from datetime import datetime
 
         print(f"\nPlacing {self.side.value} order:")
@@ -48,17 +50,18 @@ class OrderArgs:
         print(f"{'Total':<30s}: ${self.price * self.size:.2f}")
 
         if self.expiration is not None:
-            exp_date = datetime.fromtimestamp(self.expiration).strftime('%Y-%m-%d %H:%M:%S')
+            exp_date = datetime.fromtimestamp(self.expiration).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
             print(f"{'Expiration':<30s}: {exp_date} ({self.expiration})")
         else:
-            default_exp = int(time.time()) + (24 * 60 * 60)
-            exp_date = datetime.fromtimestamp(default_exp).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"{'Expiration':<30s}: {exp_date} (24h)")
+            print(f"{'Expiration':<30s}: 0 (no expiration)")
 
 
 @dataclass
 class Outcome:
     """Market outcome data."""
+
     id: str
     label: str
     token_id: str
@@ -67,6 +70,7 @@ class Outcome:
 @dataclass
 class Market:
     """Market data."""
+
     id: str
     outcomes: list[Outcome]
     slug: str | None = None
@@ -80,6 +84,7 @@ class Market:
 @dataclass
 class Event:
     """Event data."""
+
     id: str
     slug: str
     title: str
@@ -100,6 +105,7 @@ class Event:
 @dataclass
 class SignedOrder:
     """Signed order data."""
+
     salt: str
     maker: str
     signer: str
@@ -136,6 +142,7 @@ class SignedOrder:
 @dataclass
 class Order:
     """Order data from API."""
+
     id: str
     market_id: str
     outcome_id: str
@@ -158,6 +165,7 @@ class Order:
 @dataclass
 class OrderBookLevel:
     """Order book level (price and size)."""
+
     price: str
     shares: str
 
@@ -165,6 +173,7 @@ class OrderBookLevel:
 @dataclass
 class OrderBook:
     """Order book data."""
+
     outcome: Outcome
     bids: list[OrderBookLevel]
     asks: list[OrderBookLevel]

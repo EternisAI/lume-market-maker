@@ -10,7 +10,6 @@ from lume_market_maker.constants import (
     DEFAULT_CHAIN_ID,
     DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
-    DEFAULT_ORDER_EXPIRATION_DAYS,
     DOMAIN_NAME,
     DOMAIN_VERSION,
     USDC_DECIMALS,
@@ -78,8 +77,8 @@ class OrderBuilder:
         size_decimal = Decimal(str(order_args.size))
 
         # Convert to integer amounts (multiply by 1e6 for USDC decimals)
-        shares_amount = int(size_decimal * Decimal(10 ** USDC_DECIMALS))
-        usdc_amount = int(price_decimal * size_decimal * Decimal(10 ** USDC_DECIMALS))
+        shares_amount = int(size_decimal * Decimal(10**USDC_DECIMALS))
+        usdc_amount = int(price_decimal * size_decimal * Decimal(10**USDC_DECIMALS))
 
         # Determine order side (0 = BUY, 1 = SELL)
         order_side = 0 if order_args.side == OrderSide.BUY else 1
@@ -96,11 +95,11 @@ class OrderBuilder:
         # Generate salt and expiration
         salt = int(time.time() * 1_000_000_000)  # nanoseconds
 
-        # Use order_args.expiration if provided, otherwise default to 1 day from now
+        # Use order_args.expiration if provided, otherwise default to 1 year from now
         if order_args.expiration is not None:
             expiration = order_args.expiration
         else:
-            expiration = int(time.time()) + (24 * 60 * 60)  # 1 day from now
+            expiration = int(time.time()) + (365 * 24 * 60 * 60)  # 1 year from now
 
         # Build EIP-712 typed data
         structured_data = {
@@ -150,9 +149,7 @@ class OrderBuilder:
         }
 
         # Sign the EIP-712 typed data
-        signed_message = self.account.sign_typed_data(
-            full_message=structured_data
-        )
+        signed_message = self.account.sign_typed_data(full_message=structured_data)
 
         # Return signed order
         return SignedOrder(

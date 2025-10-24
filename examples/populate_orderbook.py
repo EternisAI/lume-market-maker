@@ -56,13 +56,13 @@ def calculate_orderbook_levels(
         price = max(0.01, min(0.99, price))
         ask_prices.append(price)
 
-    # Distribute capital across buy orders (more at better prices)
+    # Distribute capital across buy orders (more at worse prices - lowest prices, further from spread)
     buy_orders = []
-    total_weight = sum(num_levels - i for i in range(num_levels))
+    total_weight = sum(i + 1 for i in range(num_levels))
 
     for i, price in enumerate(bid_prices):
-        # Weight: more capital at better prices (closer to mid)
-        weight = (num_levels - i) / total_weight
+        # Weight: more capital at worse prices (i+1 means lower prices get more weight)
+        weight = (i + 1) / total_weight
         capital_for_level = total_capital * weight
         size = capital_for_level / price
         buy_orders.append((price, size))
@@ -221,13 +221,13 @@ def main():
 
     # Orderbook parameters (can be overridden via env vars)
     initial_yes_price = float(os.getenv("INITIAL_YES_PRICE", "0.50"))
-    total_capital = float(os.getenv("TOTAL_CAPITAL", "1000.0"))
-    total_yes_shares = float(os.getenv("TOTAL_YES_SHARES", "1000.0"))
-    total_no_shares = float(os.getenv("TOTAL_NO_SHARES", "1000.0"))
-    num_levels = int(os.getenv("NUM_LEVELS", "10"))
-    spread_bps = int(os.getenv("SPREAD_BPS", "50"))
+    total_capital = float(os.getenv("TOTAL_CAPITAL", "5000.0"))
+    total_yes_shares = float(os.getenv("TOTAL_YES_SHARES", "5000.0"))
+    total_no_shares = float(os.getenv("TOTAL_NO_SHARES", "5000.0"))
+    num_levels = int(os.getenv("NUM_LEVELS", "20"))
+    spread_bps = int(os.getenv("SPREAD_BPS", "100"))
     outcome = os.getenv("OUTCOME", "YES")
-    dry_run = os.getenv("DRY_RUN", "true").lower() == "true"
+    dry_run = False
 
     # Calculate NO price (complementary to YES price)
     initial_no_price = 1.0 - initial_yes_price

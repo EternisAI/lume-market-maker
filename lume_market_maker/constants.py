@@ -16,6 +16,3 @@ ORDER_STRUCTURE_HASH = "Order(uint256 salt,address maker,address signer,address 
 
 # USDC decimals
 USDC_DECIMALS = 6
-
-# Order expiration (30 days)
-DEFAULT_ORDER_EXPIRATION_DAYS = 30
