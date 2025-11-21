@@ -21,12 +21,12 @@ USDC_TICK = 1000
 TOKEN_TICK = 10000
 
 
-def round_usdc_amount(amount: int) -> int:
+def align_down(amount: int) -> int:
     return (amount // USDC_TICK) * USDC_TICK
 
 
-def round_token_amount(amount: int) -> int:
-    return (amount // TOKEN_TICK) * TOKEN_TICK
+def align_up(amount: int) -> int:
+    return ((amount + TOKEN_TICK - 1) // TOKEN_TICK) * TOKEN_TICK
 
 
 class OrderBuilder:
@@ -95,11 +95,11 @@ class OrderBuilder:
         order_side = 0 if order_args.side == OrderSide.BUY else 1
 
         if order_args.side == OrderSide.BUY:
-            maker_amount = round_usdc_amount(usdc_amount)
-            taker_amount = round_token_amount(shares_amount)
+            maker_amount = align_up(usdc_amount)
+            taker_amount = align_down(shares_amount)
         else:
-            maker_amount = round_token_amount(shares_amount)
-            taker_amount = round_usdc_amount(usdc_amount)
+            maker_amount = align_down(shares_amount)
+            taker_amount = align_up(usdc_amount)
 
         # Generate salt and expiration
         salt = int(time.time() * 1_000_000_000)  # nanoseconds
