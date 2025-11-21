@@ -22,11 +22,11 @@ TOKEN_TICK = 10000
 
 
 def align_down(amount: int) -> int:
-    return (amount // USDC_TICK) * USDC_TICK
+    return (amount // TOKEN_TICK) * TOKEN_TICK
 
 
 def align_up(amount: int) -> int:
-    return ((amount + TOKEN_TICK - 1) // TOKEN_TICK) * TOKEN_TICK
+    return ((amount + USDC_TICK - 1) // USDC_TICK) * USDC_TICK
 
 
 class OrderBuilder:
