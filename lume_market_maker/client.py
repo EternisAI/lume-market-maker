@@ -11,7 +11,17 @@ from lume_market_maker.constants import (
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
 from lume_market_maker.order_builder import OrderBuilder
-from lume_market_maker.types import Event, Market, Order, OrderArgs, OrderBook, OrderBookLevel, OrderType, Outcome, SignedOrder
+from lume_market_maker.types import (
+    Event,
+    Market,
+    Order,
+    OrderArgs,
+    OrderBook,
+    OrderBookLevel,
+    OrderType,
+    Outcome,
+    SignedOrder,
+)
 
 
 class LumeClient:
@@ -90,7 +100,9 @@ class LumeClient:
             proxy = data["user"]["proxyWalletAddress"]
             return proxy
         except (KeyError, TypeError) as e:
-            raise GraphQLError(f"Failed to parse proxy wallet from response: {e}") from e
+            raise GraphQLError(
+                f"Failed to parse proxy wallet from response: {e}"
+            ) from e
 
     def get_market(self, market_id: str) -> Market:
         """
@@ -139,7 +151,6 @@ class LumeClient:
             )
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse market data from response: {e}") from e
-
 
     def place_order(
         self,
@@ -221,7 +232,9 @@ class LumeClient:
 
         # If not found, raise error with available outcomes
         available = ", ".join([o.label for o in market.outcomes])
-        raise ValueError(f"Outcome '{outcome_label}' not found. Available outcomes: {available}")
+        raise ValueError(
+            f"Outcome '{outcome_label}' not found. Available outcomes: {available}"
+        )
 
     def create_and_place_order(
         self,
@@ -259,7 +272,9 @@ class LumeClient:
             nonce=nonce,
         )
 
-        return self.place_order(order_args.market_id, signed_order, order_args, outcome, order_type)
+        return self.place_order(
+            order_args.market_id, signed_order, order_args, outcome, order_type
+        )
 
     def get_order(self, order_id: str) -> Order:
         """
@@ -285,7 +300,6 @@ class LumeClient:
                 type
                 status
                 timeInForce
-                price
                 shares
                 filledShares
                 collateralLocked
@@ -386,7 +400,9 @@ class LumeClient:
 
             return OrderBook(outcome=outcome_data, bids=bids, asks=asks)
         except (KeyError, TypeError) as e:
-            raise GraphQLError(f"Failed to parse orderbook data from response: {e}") from e
+            raise GraphQLError(
+                f"Failed to parse orderbook data from response: {e}"
+            ) from e
 
     def cancel_order(self, order_id: str) -> dict:
         """
@@ -467,10 +483,6 @@ class LumeClient:
                         id
                         slug
                         question
-                        status
-                        volume
-                        liquidity
-                        openInterest
                         outcomes {
                             id
                             label
@@ -512,10 +524,6 @@ class LumeClient:
                             outcomes=outcomes,
                             slug=m.get("slug"),
                             question=m.get("question"),
-                            status=m.get("status"),
-                            volume=m.get("volume"),
-                            liquidity=m.get("liquidity"),
-                            open_interest=m.get("openInterest"),
                         )
                     )
 
@@ -567,10 +575,6 @@ class LumeClient:
                 id
                 slug
                 question
-                status
-                volume
-                liquidity
-                openInterest
                 outcomes {
                     id
                     label
@@ -606,13 +610,11 @@ class LumeClient:
                         outcomes=outcomes,
                         slug=m.get("slug"),
                         question=m.get("question"),
-                        status=m.get("status"),
-                        volume=m.get("volume"),
-                        liquidity=m.get("liquidity"),
-                        open_interest=m.get("openInterest"),
                     )
                 )
 
             return markets
         except (KeyError, TypeError) as e:
-            raise GraphQLError(f"Failed to parse markets data from response: {e}") from e
+            raise GraphQLError(
+                f"Failed to parse markets data from response: {e}"
+            ) from e

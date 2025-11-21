@@ -2,12 +2,12 @@
 
 # Default values
 DEFAULT_API_URL = "https://server-graphql-dev.up.railway.app/query"
-DEFAULT_CHAIN_ID = 84532  # Base Sepolia
-DEFAULT_EXCHANGE_ADDRESS = "0xCf4a367D980a8FB9D4d64a3851C3b77FE3801f97"
+DEFAULT_CHAIN_ID = 10143
+DEFAULT_EXCHANGE_ADDRESS = "0x830755fB03b699f98708d71E996918E25efF3eD1"
 DEFAULT_FEE_RATE_BPS = 0
 
 # EIP-712 Domain
-DOMAIN_NAME = "Polymarket CTF Exchange"
+DOMAIN_NAME = "Lume CTF Exchange"
 DOMAIN_VERSION = "1"
 
 # Order constants

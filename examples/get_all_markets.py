@@ -33,17 +33,9 @@ def main():
             print(f"  Slug: {market.slug}")
         if market.question:
             print(f"  Question: {market.question}")
-        if market.status:
-            print(f"  Status: {market.status}")
         print(f"  Outcomes: {len(market.outcomes)}")
         for outcome in market.outcomes:
             print(f"    - {outcome.label} (ID: {outcome.id})")
-        if market.volume:
-            print(f"  Volume: {market.volume}")
-        if market.liquidity:
-            print(f"  Liquidity: {market.liquidity}")
-        if market.open_interest:
-            print(f"  Open Interest: {market.open_interest}")
         print()
 
 

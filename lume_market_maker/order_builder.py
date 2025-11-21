@@ -17,6 +17,17 @@ from lume_market_maker.constants import (
 )
 from lume_market_maker.types import OrderArgs, OrderSide, SignedOrder
 
+USDC_TICK = 1000
+TOKEN_TICK = 10000
+
+
+def round_usdc_amount(amount: int) -> int:
+    return (amount // USDC_TICK) * USDC_TICK
+
+
+def round_token_amount(amount: int) -> int:
+    return (amount // TOKEN_TICK) * TOKEN_TICK
+
 
 class OrderBuilder:
     """Builder for creating and signing orders using EIP-712."""
@@ -83,14 +94,12 @@ class OrderBuilder:
         # Determine order side (0 = BUY, 1 = SELL)
         order_side = 0 if order_args.side == OrderSide.BUY else 1
 
-        # For BUY orders: maker gives USDC, gets shares
-        # For SELL orders: maker gives shares, gets USDC
         if order_args.side == OrderSide.BUY:
-            maker_amount = usdc_amount  # USDC (price * size * 1e6)
-            taker_amount = shares_amount  # shares (size * 1e6)
+            maker_amount = round_usdc_amount(usdc_amount)
+            taker_amount = round_token_amount(shares_amount)
         else:
-            maker_amount = shares_amount  # shares (size * 1e6)
-            taker_amount = usdc_amount  # USDC (price * size * 1e6)
+            maker_amount = round_token_amount(shares_amount)
+            taker_amount = round_usdc_amount(usdc_amount)
 
         # Generate salt and expiration
         salt = int(time.time() * 1_000_000_000)  # nanoseconds

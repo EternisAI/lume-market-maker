@@ -75,10 +75,6 @@ class Market:
     outcomes: list[Outcome]
     slug: str | None = None
     question: str | None = None
-    status: str | None = None
-    volume: str | None = None
-    liquidity: str | None = None
-    open_interest: str | None = None
 
 
 @dataclass
