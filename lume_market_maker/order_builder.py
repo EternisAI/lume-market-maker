@@ -21,12 +21,24 @@ USDC_TICK = 1000
 TOKEN_TICK = 10000
 
 
-def align_down(amount: int) -> int:
-    return (amount // TOKEN_TICK) * TOKEN_TICK
-
-
-def align_up(amount: int) -> int:
+def align_usdc_up(amount: int) -> int:
+    """Round USDC amount UP to nearest USDC_TICK (1000)."""
     return ((amount + USDC_TICK - 1) // USDC_TICK) * USDC_TICK
+
+
+def align_usdc_down(amount: int) -> int:
+    """Round USDC amount DOWN to nearest USDC_TICK (1000)."""
+    return (amount // USDC_TICK) * USDC_TICK
+
+
+def align_token_up(amount: int) -> int:
+    """Round token amount UP to nearest TOKEN_TICK (10000)."""
+    return ((amount + TOKEN_TICK - 1) // TOKEN_TICK) * TOKEN_TICK
+
+
+def align_token_down(amount: int) -> int:
+    """Round token amount DOWN to nearest TOKEN_TICK (10000)."""
+    return (amount // TOKEN_TICK) * TOKEN_TICK
 
 
 class OrderBuilder:
@@ -95,11 +107,13 @@ class OrderBuilder:
         order_side = 0 if order_args.side == OrderSide.BUY else 1
 
         if order_args.side == OrderSide.BUY:
-            maker_amount = align_up(usdc_amount)
-            taker_amount = align_down(shares_amount)
+            # BUY: Give more USDC (round up), receive fewer tokens (round down)
+            maker_amount = align_usdc_up(usdc_amount)
+            taker_amount = align_token_down(shares_amount)
         else:
-            maker_amount = align_down(shares_amount)
-            taker_amount = align_up(usdc_amount)
+            # SELL: Give more tokens (round up), receive less USDC (round down)
+            maker_amount = align_token_up(shares_amount)
+            taker_amount = align_usdc_down(usdc_amount)
 
         # Generate salt and expiration
         salt = int(time.time() * 1_000_000_000)  # nanoseconds
