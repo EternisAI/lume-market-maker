@@ -8,6 +8,7 @@ from lume_market_maker.constants import (
     DEFAULT_CHAIN_ID,
     DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
+    SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
 from lume_market_maker.order_builder import OrderBuilder
@@ -36,6 +37,7 @@ class LumeClient:
         exchange_address: str = DEFAULT_EXCHANGE_ADDRESS,
         fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
         proxy_wallet: Optional[str] = None,
+        signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
     ):
         """
         Initialize Lume client.
@@ -47,11 +49,13 @@ class LumeClient:
             exchange_address: Exchange contract address
             fee_rate_bps: Fee rate in basis points
             proxy_wallet: Optional proxy wallet address (if None, will be fetched from API)
+            signature_type: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
         """
         self.api_url = api_url
         self.chain_id = chain_id
         self.exchange_address = exchange_address
         self.fee_rate_bps = fee_rate_bps
+        self.signature_type = signature_type
 
         # Initialize GraphQL client
         self.graphql = GraphQLClient(api_url)
@@ -62,6 +66,7 @@ class LumeClient:
             chain_id=chain_id,
             exchange_address=exchange_address,
             fee_rate_bps=fee_rate_bps,
+            signature_type=signature_type,
         )
 
         # Store EOA address

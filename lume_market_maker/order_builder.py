@@ -12,6 +12,7 @@ from lume_market_maker.constants import (
     DEFAULT_FEE_RATE_BPS,
     DOMAIN_NAME,
     DOMAIN_VERSION,
+    SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
     ZERO_ADDRESS,
 )
 from lume_market_maker.types import OrderArgs, OrderSide, SignedOrder
@@ -26,6 +27,7 @@ class OrderBuilder:
         chain_id: int = DEFAULT_CHAIN_ID,
         exchange_address: str = DEFAULT_EXCHANGE_ADDRESS,
         fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
+        signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
     ):
         """
         Initialize order builder.
@@ -35,10 +37,12 @@ class OrderBuilder:
             chain_id: Chain ID for the network
             exchange_address: Exchange contract address
             fee_rate_bps: Fee rate in basis points
+            signature_type: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
         """
         self.chain_id = chain_id
         self.exchange_address = exchange_address
         self.fee_rate_bps = fee_rate_bps
+        self.signature_type = signature_type
 
         # Initialize account
         if not private_key.startswith("0x"):
@@ -131,7 +135,7 @@ class OrderBuilder:
                 "nonce": nonce,
                 "feeRateBps": self.fee_rate_bps,
                 "side": order_side,
-                "signatureType": 1,  # EOA signature
+                "signatureType": self.signature_type,
             },
         }
 
@@ -151,6 +155,6 @@ class OrderBuilder:
             nonce=str(nonce),
             fee_rate_bps=str(self.fee_rate_bps),
             side=order_side,
-            signature_type=1,
+            signature_type=self.signature_type,
             signature=f"0x{signed_message.signature.hex()}",
         )

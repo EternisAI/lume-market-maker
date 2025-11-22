@@ -16,3 +16,8 @@ ORDER_STRUCTURE_HASH = "Order(uint256 salt,address maker,address signer,address 
 
 # USDC decimals
 USDC_DECIMALS = 6
+
+# Signature Types
+SIGNATURE_TYPE_EOA = 0
+SIGNATURE_TYPE_POLY_PROXY = 1
+SIGNATURE_TYPE_POLY_GNOSIS_SAFE = 2
