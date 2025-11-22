@@ -1,44 +1,20 @@
 """Order builder and signer for Lume Market Maker."""
 
 import time
-from decimal import Decimal
 
 from eth_account import Account
 from eth_account.signers.local import LocalAccount
 
+from lume_market_maker.amount_calculator import AmountCalculator
 from lume_market_maker.constants import (
     DEFAULT_CHAIN_ID,
     DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
     DOMAIN_NAME,
     DOMAIN_VERSION,
-    USDC_DECIMALS,
     ZERO_ADDRESS,
 )
 from lume_market_maker.types import OrderArgs, OrderSide, SignedOrder
-
-USDC_TICK = 1000
-TOKEN_TICK = 10000
-
-
-def align_usdc_up(amount: int) -> int:
-    """Round USDC amount UP to nearest USDC_TICK (1000)."""
-    return ((amount + USDC_TICK - 1) // USDC_TICK) * USDC_TICK
-
-
-def align_usdc_down(amount: int) -> int:
-    """Round USDC amount DOWN to nearest USDC_TICK (1000)."""
-    return (amount // USDC_TICK) * USDC_TICK
-
-
-def align_token_up(amount: int) -> int:
-    """Round token amount UP to nearest TOKEN_TICK (10000)."""
-    return ((amount + TOKEN_TICK - 1) // TOKEN_TICK) * TOKEN_TICK
-
-
-def align_token_down(amount: int) -> int:
-    """Round token amount DOWN to nearest TOKEN_TICK (10000)."""
-    return (amount // TOKEN_TICK) * TOKEN_TICK
 
 
 class OrderBuilder:
@@ -93,27 +69,15 @@ class OrderBuilder:
         Returns:
             Signed order
         """
-        # Calculate amounts
-        # User provides price and size in decimal format (e.g., 0.5, 10.0)
-        # We need to convert to integer amounts with proper decimals
-        price_decimal = Decimal(str(order_args.price))
-        size_decimal = Decimal(str(order_args.size))
+        calculator = AmountCalculator()
+        amounts = calculator.calculate_amounts(
+            side=order_args.side.value, price=order_args.price, size=order_args.size
+        )
 
-        # Convert to integer amounts (multiply by 1e6 for USDC decimals)
-        shares_amount = int(size_decimal * Decimal(10**USDC_DECIMALS))
-        usdc_amount = int(price_decimal * size_decimal * Decimal(10**USDC_DECIMALS))
+        maker_amount = amounts.makerAmount
+        taker_amount = amounts.takerAmount
 
-        # Determine order side (0 = BUY, 1 = SELL)
         order_side = 0 if order_args.side == OrderSide.BUY else 1
-
-        if order_args.side == OrderSide.BUY:
-            # BUY: Give more USDC (round up), receive fewer tokens (round down)
-            maker_amount = align_usdc_up(usdc_amount)
-            taker_amount = align_token_down(shares_amount)
-        else:
-            # SELL: Give more tokens (round up), receive less USDC (round down)
-            maker_amount = align_token_up(shares_amount)
-            taker_amount = align_usdc_down(usdc_amount)
 
         # Generate salt and expiration
         salt = int(time.time() * 1_000_000_000)  # nanoseconds

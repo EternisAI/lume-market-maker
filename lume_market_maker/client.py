@@ -18,6 +18,7 @@ from lume_market_maker.types import (
     OrderArgs,
     OrderBook,
     OrderBookLevel,
+    OrderSide,
     OrderType,
     Outcome,
     SignedOrder,
@@ -184,11 +185,11 @@ class LumeClient:
         }
         """
 
-        # Convert price and size to decimal format with 1e6 precision
-        # User provides: price (0.01-0.99), size (number of shares)
-        # API expects: price and shares as decimal strings with 6 decimal places
-        price_decimal = Decimal(str(order_args.price)) * Decimal("1000000")
-        shares_decimal = Decimal(str(order_args.size)) * Decimal("1000000")
+        shares_amount = (
+            signed_order.taker_amount
+            if order_args.side == OrderSide.BUY
+            else signed_order.maker_amount
+        )
 
         variables = {
             "input": {
@@ -196,8 +197,7 @@ class LumeClient:
                 "outcomeId": outcome.id,
                 "side": order_args.side.value,
                 "orderType": order_type.value,
-                "price": str(int(price_decimal)),  # Convert to integer string
-                "shares": str(int(shares_decimal)),  # Convert to integer string
+                "shares": shares_amount,
                 "eoaWallet": self.eoa_address,
                 "orderData": signed_order.to_dict(),
             }
