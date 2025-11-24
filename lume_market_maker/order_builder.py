@@ -8,7 +8,6 @@ from eth_account.signers.local import LocalAccount
 from lume_market_maker.amount_calculator import AmountCalculator
 from lume_market_maker.constants import (
     DEFAULT_CHAIN_ID,
-    DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
     DOMAIN_NAME,
     DOMAIN_VERSION,
@@ -25,7 +24,6 @@ class OrderBuilder:
         self,
         private_key: str,
         chain_id: int = DEFAULT_CHAIN_ID,
-        exchange_address: str = DEFAULT_EXCHANGE_ADDRESS,
         fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
         signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
     ):
@@ -35,12 +33,10 @@ class OrderBuilder:
         Args:
             private_key: Private key for signing orders (hex string with or without 0x prefix)
             chain_id: Chain ID for the network
-            exchange_address: Exchange contract address
             fee_rate_bps: Fee rate in basis points
             signature_type: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
         """
         self.chain_id = chain_id
-        self.exchange_address = exchange_address
         self.fee_rate_bps = fee_rate_bps
         self.signature_type = signature_type
 
@@ -56,8 +52,8 @@ class OrderBuilder:
         order_args: OrderArgs,
         outcome_id: str,
         token_id: str,
+        exchange_address: str,
         nonce: int = 0,
-        expiration_days: int | None = None,
     ) -> SignedOrder:
         """
         Build and sign an order using EIP-712.
@@ -67,8 +63,8 @@ class OrderBuilder:
             order_args: Order arguments
             outcome_id: Outcome ID from market
             token_id: Token ID from outcome
+            exchange_address: Exchange contract address (CTF or NegRisk)
             nonce: Order nonce
-            expiration_days: Deprecated - use order_args.expiration instead
 
         Returns:
             Signed order
@@ -121,7 +117,7 @@ class OrderBuilder:
                 "name": DOMAIN_NAME,
                 "version": DOMAIN_VERSION,
                 "chainId": self.chain_id,
-                "verifyingContract": self.exchange_address,
+                "verifyingContract": exchange_address,
             },
             "message": {
                 "salt": salt,

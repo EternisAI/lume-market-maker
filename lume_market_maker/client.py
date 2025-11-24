@@ -4,10 +4,11 @@ from decimal import Decimal
 from typing import Optional
 
 from lume_market_maker.constants import (
+    CTF_EXCHANGE_ADDRESS,
     DEFAULT_API_URL,
     DEFAULT_CHAIN_ID,
-    DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
+    NEGRISK_EXCHANGE_ADDRESS,
     SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
@@ -34,7 +35,6 @@ class LumeClient:
         private_key: str,
         api_url: str = DEFAULT_API_URL,
         chain_id: int = DEFAULT_CHAIN_ID,
-        exchange_address: str = DEFAULT_EXCHANGE_ADDRESS,
         fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
         proxy_wallet: Optional[str] = None,
         signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
@@ -46,14 +46,12 @@ class LumeClient:
             private_key: Private key for signing orders (hex string with or without 0x prefix)
             api_url: GraphQL API endpoint URL (default: dev server)
             chain_id: Chain ID for the network (default: Base Sepolia)
-            exchange_address: Exchange contract address
             fee_rate_bps: Fee rate in basis points
             proxy_wallet: Optional proxy wallet address (if None, will be fetched from API)
             signature_type: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
         """
         self.api_url = api_url
         self.chain_id = chain_id
-        self.exchange_address = exchange_address
         self.fee_rate_bps = fee_rate_bps
         self.signature_type = signature_type
 
@@ -64,7 +62,6 @@ class LumeClient:
         self.order_builder = OrderBuilder(
             private_key=private_key,
             chain_id=chain_id,
-            exchange_address=exchange_address,
             fee_rate_bps=fee_rate_bps,
             signature_type=signature_type,
         )
@@ -132,6 +129,9 @@ class LumeClient:
                     label
                     tokenId
                 }
+                event {
+                    isNegRisk
+                }
             }
         }
         """
@@ -151,9 +151,18 @@ class LumeClient:
                 if o.get("id")
             ]
 
+            # Extract isNegRisk from event
+            is_neg_risk = None
+            if (
+                market_data.get("event")
+                and market_data["event"].get("isNegRisk") is not None
+            ):
+                is_neg_risk = market_data["event"]["isNegRisk"]
+
             return Market(
                 id=market_data["id"],
                 outcomes=outcomes,
+                is_neg_risk=is_neg_risk,
             )
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse market data from response: {e}") from e
@@ -214,13 +223,16 @@ class LumeClient:
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse order response: {e}") from e
 
-    def _resolve_outcome(self, market_id: str, outcome_label: str) -> Outcome:
+    def _resolve_outcome(
+        self, market_id: str, outcome_label: str, market: Optional[Market] = None
+    ) -> Outcome:
         """
         Resolve outcome label to outcome object.
 
         Args:
             market_id: Market UUID
             outcome_label: Outcome label (e.g., "YES", "NO")
+            market: Optional market object (if already fetched)
 
         Returns:
             Outcome object
@@ -228,7 +240,8 @@ class LumeClient:
         Raises:
             ValueError: If outcome not found
         """
-        market = self.get_market(market_id)
+        if market is None:
+            market = self.get_market(market_id)
         outcome_label_upper = outcome_label.upper()
 
         for outcome in market.outcomes:
@@ -262,11 +275,18 @@ class LumeClient:
             GraphQLError: If the operation fails
             ValueError: If outcome not found
         """
-        # Resolve outcome from label
-        outcome = self._resolve_outcome(order_args.market_id, order_args.outcome)
+        # Get market information including isNegRisk and outcomes
+        market = self.get_market(order_args.market_id)
 
-        # Create internal order args with resolved outcome
-        from lume_market_maker.order_builder import OrderBuilder
+        # Resolve outcome from label (pass market to avoid duplicate fetch)
+        outcome = self._resolve_outcome(
+            order_args.market_id, order_args.outcome, market
+        )
+
+        # Determine exchange address based on isNegRisk (default to CTF)
+        exchange_address = (
+            NEGRISK_EXCHANGE_ADDRESS if market.is_neg_risk else CTF_EXCHANGE_ADDRESS
+        )
 
         # Build and sign order
         signed_order = self.order_builder.build_and_sign_order(
@@ -274,6 +294,7 @@ class LumeClient:
             order_args=order_args,
             outcome_id=outcome.id,
             token_id=outcome.token_id,
+            exchange_address=exchange_address,
             nonce=nonce,
         )
 
@@ -484,6 +505,7 @@ class LumeClient:
                     openInterest
                     category
                     tags
+                    isNegRisk
                     markets {
                         id
                         slug
@@ -549,6 +571,7 @@ class LumeClient:
                         volume=e.get("volume"),
                         liquidity=e.get("liquidity"),
                         open_interest=e.get("openInterest"),
+                        is_neg_risk=e.get("isNegRisk"),
                     )
                 )
 
