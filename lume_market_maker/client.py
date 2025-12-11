@@ -4,10 +4,12 @@ from decimal import Decimal
 from typing import Optional
 
 from lume_market_maker.constants import (
+    CTF_EXCHANGE_ADDRESS,
     DEFAULT_API_URL,
     DEFAULT_CHAIN_ID,
     DEFAULT_EXCHANGE_ADDRESS,
     DEFAULT_FEE_RATE_BPS,
+    NEG_RISK_EXCHANGE_ADDRESS,
     SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
@@ -127,6 +129,9 @@ class LumeClient:
         query($id: ID!) {
             market(id: $id) {
                 id
+                event {
+                    isNegRisk
+                }
                 outcomes {
                     id
                     label
@@ -151,9 +156,13 @@ class LumeClient:
                 if o.get("id")
             ]
 
+            # Extract isNegRisk from event
+            is_neg_risk = market_data.get("event", {}).get("isNegRisk", False)
+
             return Market(
                 id=market_data["id"],
                 outcomes=outcomes,
+                is_neg_risk=is_neg_risk,
             )
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse market data from response: {e}") from e
@@ -214,7 +223,7 @@ class LumeClient:
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse order response: {e}") from e
 
-    def _resolve_outcome(self, market_id: str, outcome_label: str) -> Outcome:
+    def _resolve_outcome(self, market_id: str, outcome_label: str) -> tuple[Outcome, Market]:
         """
         Resolve outcome label to outcome object.
 
@@ -223,7 +232,7 @@ class LumeClient:
             outcome_label: Outcome label (e.g., "YES", "NO")
 
         Returns:
-            Outcome object
+            Tuple of (Outcome object, Market object)
 
         Raises:
             ValueError: If outcome not found
@@ -233,13 +242,25 @@ class LumeClient:
 
         for outcome in market.outcomes:
             if outcome.label.upper() == outcome_label_upper:
-                return outcome
+                return outcome, market
 
         # If not found, raise error with available outcomes
         available = ", ".join([o.label for o in market.outcomes])
         raise ValueError(
             f"Outcome '{outcome_label}' not found. Available outcomes: {available}"
         )
+
+    def get_exchange_address(self, is_neg_risk: bool) -> str:
+        """
+        Get the appropriate exchange address based on market type.
+
+        Args:
+            is_neg_risk: Whether the market uses neg-risk exchange
+
+        Returns:
+            Exchange contract address
+        """
+        return NEG_RISK_EXCHANGE_ADDRESS if is_neg_risk else CTF_EXCHANGE_ADDRESS
 
     def create_and_place_order(
         self,
@@ -262,19 +283,20 @@ class LumeClient:
             GraphQLError: If the operation fails
             ValueError: If outcome not found
         """
-        # Resolve outcome from label
-        outcome = self._resolve_outcome(order_args.market_id, order_args.outcome)
+        # Resolve outcome from label (also returns market for is_neg_risk check)
+        outcome, market = self._resolve_outcome(order_args.market_id, order_args.outcome)
 
-        # Create internal order args with resolved outcome
-        from lume_market_maker.order_builder import OrderBuilder
+        # Get the correct exchange address based on market type
+        exchange_address = self.get_exchange_address(market.is_neg_risk)
 
-        # Build and sign order
+        # Build and sign order with the correct exchange address
         signed_order = self.order_builder.build_and_sign_order(
             proxy_wallet=self.proxy_wallet,
             order_args=order_args,
             outcome_id=outcome.id,
             token_id=outcome.token_id,
             nonce=nonce,
+            exchange_address=exchange_address,
         )
 
         return self.place_order(
@@ -359,8 +381,8 @@ class LumeClient:
             GraphQLError: If the query fails
             ValueError: If outcome not found
         """
-        # Resolve outcome from label
-        resolved_outcome = self._resolve_outcome(market_id, outcome)
+        # Resolve outcome from label (ignore market, just need outcome)
+        resolved_outcome, _ = self._resolve_outcome(market_id, outcome)
 
         query = """
         query($marketId: ID!, $outcomeId: ID!) {

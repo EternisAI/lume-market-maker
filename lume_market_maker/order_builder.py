@@ -58,6 +58,7 @@ class OrderBuilder:
         token_id: str,
         nonce: int = 0,
         expiration_days: int | None = None,
+        exchange_address: str | None = None,
     ) -> SignedOrder:
         """
         Build and sign an order using EIP-712.
@@ -69,6 +70,7 @@ class OrderBuilder:
             token_id: Token ID from outcome
             nonce: Order nonce
             expiration_days: Deprecated - use order_args.expiration instead
+            exchange_address: Override exchange address for signing (for neg-risk markets)
 
         Returns:
             Signed order
@@ -91,6 +93,9 @@ class OrderBuilder:
             expiration = order_args.expiration
         else:
             expiration = int(time.time()) + (365 * 24 * 60 * 60)  # 1 year from now
+
+        # Use provided exchange address or fall back to default
+        verifying_contract = exchange_address or self.exchange_address
 
         # Build EIP-712 typed data
         structured_data = {
@@ -121,7 +126,7 @@ class OrderBuilder:
                 "name": DOMAIN_NAME,
                 "version": DOMAIN_VERSION,
                 "chainId": self.chain_id,
-                "verifyingContract": self.exchange_address,
+                "verifyingContract": verifying_contract,
             },
             "message": {
                 "salt": salt,

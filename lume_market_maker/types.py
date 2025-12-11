@@ -75,6 +75,7 @@ class Market:
     outcomes: list[Outcome]
     slug: str | None = None
     question: str | None = None
+    is_neg_risk: bool = False  # Whether market uses neg-risk exchange
 
 
 @dataclass
