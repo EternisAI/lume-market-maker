@@ -1,7 +1,7 @@
 """Main client for Lume Market Maker."""
 
 from decimal import Decimal
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from lume_market_maker.constants import (
     CTF_EXCHANGE_ADDRESS,
@@ -13,6 +13,12 @@ from lume_market_maker.constants import (
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
 from lume_market_maker.order_builder import OrderBuilder
+from lume_market_maker.subscriptions import (
+    OrderUpdate,
+    PositionUpdate,
+    SubscriptionManager,
+)
+from lume_market_maker.websocket import GraphQLWebSocketClient
 from lume_market_maker.types import (
     Event,
     Market,
@@ -73,6 +79,24 @@ class LumeClient:
         self._proxy_wallet = proxy_wallet
         if self._proxy_wallet is None:
             self._proxy_wallet = self._fetch_proxy_wallet()
+
+        # WebSocket URL derived from API URL
+        self.ws_url = self._derive_ws_url(api_url)
+
+        # Lazy-initialized WebSocket client and subscription manager
+        self._ws_client: Optional[GraphQLWebSocketClient] = None
+        self._subscription_manager: Optional[SubscriptionManager] = None
+
+    def _derive_ws_url(self, api_url: str) -> str:
+        """Derive WebSocket URL from HTTP API URL."""
+        ws_url = api_url.replace("https://", "wss://").replace("http://", "ws://")
+        # Ensure path ends with /query for subscriptions
+        if not ws_url.endswith("/query"):
+            if ws_url.endswith("/"):
+                ws_url = ws_url + "query"
+            else:
+                ws_url = ws_url + "/query"
+        return ws_url
 
     @property
     def proxy_wallet(self) -> str:
@@ -646,3 +670,89 @@ class LumeClient:
             raise GraphQLError(
                 f"Failed to parse markets data from response: {e}"
             ) from e
+
+    # ==================== Subscription Methods ====================
+
+    async def connect_websocket(self) -> None:
+        """
+        Connect to WebSocket for real-time subscriptions.
+
+        This establishes a WebSocket connection using wallet-based authentication.
+        Must be called before using subscription methods.
+
+        Raises:
+            WebSocketError: If connection fails
+        """
+        if self._ws_client is None:
+            self._ws_client = GraphQLWebSocketClient(
+                ws_url=self.ws_url,
+                account=self.order_builder.account,
+                chain_id=self.chain_id,
+                graphql_client=self.graphql,
+            )
+
+        if not self._ws_client.connected:
+            await self._ws_client.connect()
+            self._subscription_manager = SubscriptionManager(self._ws_client)
+
+    async def close_websocket(self) -> None:
+        """
+        Close WebSocket connection.
+
+        Call this when done with subscriptions to clean up resources.
+        """
+        if self._ws_client is not None:
+            await self._ws_client.close()
+            self._ws_client = None
+            self._subscription_manager = None
+
+    @property
+    def subscriptions(self) -> SubscriptionManager:
+        """
+        Get subscription manager for direct subscription access.
+
+        Returns:
+            SubscriptionManager instance
+
+        Raises:
+            RuntimeError: If WebSocket not connected
+        """
+        if self._subscription_manager is None:
+            raise RuntimeError(
+                "WebSocket not connected. Call connect_websocket() first."
+            )
+        return self._subscription_manager
+
+    async def subscribe_to_order_updates(self) -> AsyncIterator[OrderUpdate]:
+        """
+        Subscribe to authenticated user's order updates.
+
+        Automatically connects to WebSocket if not already connected.
+
+        Yields:
+            OrderUpdate objects for each order change
+
+        Example:
+            async for update in client.subscribe_to_order_updates():
+                print(f"[{update.type}] Order {update.order.id}: {update.order.status}")
+        """
+        await self.connect_websocket()
+        async for update in self.subscriptions.my_order_updates():
+            yield update
+
+    async def subscribe_to_position_updates(self) -> AsyncIterator[PositionUpdate]:
+        """
+        Subscribe to authenticated user's position updates.
+
+        Automatically connects to WebSocket if not already connected.
+
+        Yields:
+            PositionUpdate objects for each position change
+
+        Example:
+            async for update in client.subscribe_to_position_updates():
+                print(f"[{update.type}] Position {update.position.id}: {update.position.shares} shares")
+        """
+        await self.connect_websocket()
+        async for update in self.subscriptions.my_position_updates():
+            yield update
