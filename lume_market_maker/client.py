@@ -2,12 +2,8 @@
 from typing import AsyncIterator, Optional
 
 from lume_market_maker.constants import (
-    CTF_EXCHANGE_ADDRESS,
-    DEFAULT_API_URL,
-    DEFAULT_CHAIN_ID,
-    DEFAULT_FEE_RATE_BPS,
-    NEGRISK_EXCHANGE_ADDRESS,
     SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
+    get_config_with_env_overrides,
 )
 from lume_market_maker.graphql import GraphQLClient, GraphQLError
 from lume_market_maker.order_builder import OrderBuilder
@@ -37,36 +33,58 @@ class LumeClient:
     def __init__(
         self,
         private_key: str,
-        api_url: str = DEFAULT_API_URL,
-        chain_id: int = DEFAULT_CHAIN_ID,
-        fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
+        api_url: Optional[str] = None,
+        chain_id: Optional[int] = None,
+        fee_rate_bps: Optional[int] = None,
         proxy_wallet: Optional[str] = None,
         signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
+        ctf_exchange_address: Optional[str] = None,
+        negrisk_exchange_address: Optional[str] = None,
     ):
         """
         Initialize Lume client.
 
         Args:
             private_key: Private key for signing orders (hex string with or without 0x prefix)
-            api_url: GraphQL API endpoint URL (default: dev server)
-            chain_id: Chain ID for the network (default: Base Sepolia)
+            api_url: GraphQL API endpoint URL (default: from selected env config)
+            chain_id: Chain ID for the network (default: from selected env config)
             fee_rate_bps: Fee rate in basis points
             proxy_wallet: Optional proxy wallet address (if None, will be fetched from API)
             signature_type: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
+            ctf_exchange_address: Optional override for CTF exchange address
+            negrisk_exchange_address: Optional override for NegRisk exchange address
         """
-        self.api_url = api_url
-        self.chain_id = chain_id
-        self.fee_rate_bps = fee_rate_bps
+        cfg = get_config_with_env_overrides()
+
+        resolved_api_url = cfg.api_url if api_url is None else api_url
+        resolved_chain_id = cfg.chain_id if chain_id is None else chain_id
+        resolved_fee_rate_bps = cfg.fee_rate_bps if fee_rate_bps is None else fee_rate_bps
+        resolved_ctf_exchange_address = (
+            cfg.ctf_exchange_address
+            if ctf_exchange_address is None
+            else ctf_exchange_address
+        )
+        resolved_negrisk_exchange_address = (
+            cfg.negrisk_exchange_address
+            if negrisk_exchange_address is None
+            else negrisk_exchange_address
+        )
+
+        self.api_url = resolved_api_url
+        self.chain_id = resolved_chain_id
+        self.fee_rate_bps = resolved_fee_rate_bps
         self.signature_type = signature_type
+        self.ctf_exchange_address = resolved_ctf_exchange_address
+        self.negrisk_exchange_address = resolved_negrisk_exchange_address
 
         # Initialize GraphQL client
-        self.graphql = GraphQLClient(api_url)
+        self.graphql = GraphQLClient(resolved_api_url)
 
         # Initialize order builder
         self.order_builder = OrderBuilder(
             private_key=private_key,
-            chain_id=chain_id,
-            fee_rate_bps=fee_rate_bps,
+            chain_id=resolved_chain_id,
+            fee_rate_bps=resolved_fee_rate_bps,
             signature_type=signature_type,
         )
 
@@ -79,7 +97,7 @@ class LumeClient:
             self._proxy_wallet = self._fetch_proxy_wallet()
 
         # WebSocket URL derived from API URL
-        self.ws_url = self._derive_ws_url(api_url)
+        self.ws_url = self._derive_ws_url(resolved_api_url)
 
         # Lazy-initialized WebSocket client and subscription manager
         self._ws_client: Optional[GraphQLWebSocketClient] = None
@@ -307,7 +325,9 @@ class LumeClient:
 
         # Determine exchange address based on isNegRisk (default to CTF)
         exchange_address = (
-            NEGRISK_EXCHANGE_ADDRESS if market.is_neg_risk else CTF_EXCHANGE_ADDRESS
+            self.negrisk_exchange_address
+            if market.is_neg_risk
+            else self.ctf_exchange_address
         )
 
         # Build and sign order

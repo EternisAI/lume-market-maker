@@ -49,6 +49,24 @@ Set your environment variable:
 export PRIVATE_KEY="your_private_key_here"
 ```
 
+### Environment selection (dev vs prod)
+
+By default, the SDK uses the **dev** environment. You can switch defaults by setting:
+
+```bash
+export LUME_ENV=prod   # or dev
+```
+
+Optional hotfix overrides (take precedence over `LUME_ENV` defaults):
+
+```bash
+export LUME_API_URL="https://..."
+export LUME_CHAIN_ID="10143"
+export LUME_CTF_EXCHANGE_ADDRESS="0x..."
+export LUME_NEGRISK_EXCHANGE_ADDRESS="0x..."
+export LUME_FEE_RATE_BPS="0"
+```
+
 ### Initialize Client
 
 ```python
@@ -257,22 +275,26 @@ print(f"\nOrderbook has {len(orderbook.bids)} bids and {len(orderbook.asks)} ask
 ```python
 LumeClient(
     private_key: str,
-    api_url: str = DEFAULT_API_URL,
-    chain_id: int = DEFAULT_CHAIN_ID,
-    exchange_address: str = DEFAULT_EXCHANGE_ADDRESS,
-    fee_rate_bps: int = DEFAULT_FEE_RATE_BPS,
+    api_url: Optional[str] = None,
+    chain_id: Optional[int] = None,
+    fee_rate_bps: Optional[int] = None,
     proxy_wallet: Optional[str] = None,
+    signature_type: int = SIGNATURE_TYPE_POLY_GNOSIS_SAFE,
+    ctf_exchange_address: Optional[str] = None,
+    negrisk_exchange_address: Optional[str] = None,
 )
 ```
 
 **Parameters:**
 
 - `private_key`: Private key for signing orders (hex string with or without 0x prefix)
-- `api_url`: GraphQL API endpoint URL (default: dev server)
-- `chain_id`: Chain ID for the network (default: 84532 - Base Sepolia)
-- `exchange_address`: Exchange contract address
-- `fee_rate_bps`: Fee rate in basis points (default: 0)
+- `api_url`: GraphQL API endpoint URL (default: from selected env config)
+- `chain_id`: Chain ID for the network (default: from selected env config)
+- `fee_rate_bps`: Fee rate in basis points (default: from selected env config)
 - `proxy_wallet`: Optional proxy wallet address (if None, fetched from API)
+- `signature_type`: Signature type (0=EOA, 1=POLY_PROXY, 2=POLY_GNOSIS_SAFE)
+- `ctf_exchange_address`: Optional override for CTF exchange address
+- `negrisk_exchange_address`: Optional override for NegRisk exchange address
 
 #### Methods
 
@@ -428,11 +450,14 @@ shares = float(order.shares) / 1_000_000  # "10000000" -> 10.0
 
 ## Network Configuration
 
-**Default Network:** Base Sepolia Testnet
+**Default Network (LUME_ENV=dev):**
 
-- Chain ID: 84532
-- Exchange Address: `0xCf4a367D980a8FB9D4d64a3851C3b77FE3801f97`
+- Chain ID: 10143
+- CTF Exchange Address: `0x4fEa4E2B6B90f8940ff9A5C7dd75c1299584522D`
+- NegRisk Exchange Address: `0x2cCE4F55DAcab307b48D4d8C1139F1425cCF6759`
 - API URL: `https://server-graphql-dev.up.railway.app/query`
+
+To use production defaults, set `LUME_ENV=prod` (and/or the `LUME_*` overrides above).
 
 ## License
 

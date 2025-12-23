@@ -200,7 +200,8 @@ def _load_config() -> BotConfig:
     if not market_id:
         raise ValueError("MARKET_ID environment variable is required")
 
-    api_url = os.getenv("API_URL")
+    # Prefer new env-based config; keep API_URL as a backward-compatible alias.
+    api_url = os.getenv("LUME_API_URL") or os.getenv("API_URL")
     api_url = api_url.strip() if api_url else None
 
     mid_price = float(os.getenv("MID_PRICE", "0.50"))
