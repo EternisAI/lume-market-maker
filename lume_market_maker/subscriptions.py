@@ -1,9 +1,21 @@
 """Subscription manager for real-time order and position updates."""
 
-from dataclasses import dataclass
-from typing import AsyncIterator, Optional
+from dataclasses import dataclass, field
+from typing import AsyncIterator, List, Optional
 
 from lume_market_maker.websocket import GraphQLWebSocketClient
+
+
+@dataclass
+class SettlementBatch:
+    """Settlement batch data representing an on-chain settlement transaction."""
+
+    id: str
+    status: str  # PENDING, SUBMITTED, CONFIRMED, FAILED
+    shares: str
+    created_at: str
+    tx_hash: Optional[str] = None
+    settlement_error: Optional[str] = None
 
 
 @dataclass
@@ -26,16 +38,20 @@ class OrderData:
     created_at: str
     updated_at: str
     expires_at: Optional[str] = None
+    # Settlement tracking fields
+    settled_shares: str = "0"
+    settlement_batches: List[SettlementBatch] = field(default_factory=list)
 
 
 @dataclass
 class OrderUpdate:
     """Real-time order update."""
 
-    type: str  # INSERT, UPDATE, DELETE
+    type: str  # INSERT, UPDATE, DELETE, SETTLEMENT
     order: OrderData
     timestamp: str
     sequence: str
+    tx_hash: Optional[str] = None  # Only present for SETTLEMENT updates
 
 
 @dataclass
@@ -98,7 +114,17 @@ subscription MyOrderUpdates {
             createdAt
             updatedAt
             expiresAt
+            settledShares
+            settlementBatches {
+                id
+                status
+                txHash
+                shares
+                settlementError
+                createdAt
+            }
         }
+        txHash
         timestamp
         sequence
     }
@@ -157,7 +183,7 @@ class SubscriptionManager:
         Subscribe to authenticated user's order updates.
 
         Yields:
-            OrderUpdate objects for each order change
+            OrderUpdate objects for each order change (INSERT, UPDATE, DELETE, SETTLEMENT)
 
         Raises:
             WebSocketError: If connection issues occur
@@ -169,6 +195,21 @@ class SubscriptionManager:
                 continue
 
             order_data = data.get("order", {})
+
+            # Parse settlement batches
+            settlement_batches = []
+            for batch_data in order_data.get("settlementBatches", []):
+                settlement_batches.append(
+                    SettlementBatch(
+                        id=batch_data.get("id", ""),
+                        status=batch_data.get("status", ""),
+                        shares=batch_data.get("shares", "0"),
+                        created_at=batch_data.get("createdAt", ""),
+                        tx_hash=batch_data.get("txHash"),
+                        settlement_error=batch_data.get("settlementError"),
+                    )
+                )
+
             order = OrderData(
                 id=order_data.get("id", ""),
                 market_id=order_data.get("marketId", ""),
@@ -186,6 +227,8 @@ class SubscriptionManager:
                 created_at=order_data.get("createdAt", ""),
                 updated_at=order_data.get("updatedAt", ""),
                 expires_at=order_data.get("expiresAt"),
+                settled_shares=order_data.get("settledShares", "0"),
+                settlement_batches=settlement_batches,
             )
 
             yield OrderUpdate(
@@ -193,6 +236,7 @@ class SubscriptionManager:
                 order=order,
                 timestamp=data.get("timestamp", ""),
                 sequence=data.get("sequence", ""),
+                tx_hash=data.get("txHash"),
             )
 
     async def my_position_updates(self) -> AsyncIterator[PositionUpdate]:
