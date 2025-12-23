@@ -5,7 +5,8 @@ to real-time order updates for your account.
 
 Prerequisites:
 - Set PRIVATE_KEY environment variable with your wallet's private key
-- Optionally set API_URL for a different API endpoint (defaults to dev server)
+- Optionally set LUME_ENV=prod (defaults to dev)
+- Optionally override endpoint with LUME_API_URL (or legacy API_URL)
 
 Usage:
     export PRIVATE_KEY=your_private_key_here
@@ -31,9 +32,10 @@ async def subscribe_to_orders():
         print("Usage: PRIVATE_KEY=0x... python examples/subscribe_orders.py")
         sys.exit(1)
 
-    api_url = os.environ.get("API_URL", "https://server-graphql-dev.up.railway.app/query")
+    # Prefer new env-based config; keep API_URL as a backward-compatible alias.
+    api_url = os.environ.get("LUME_API_URL") or os.environ.get("API_URL")
 
-    print(f"Connecting to {api_url}...")
+    print(f"Connecting to {api_url or '(default from LUME_ENV)'}...")
     client = LumeClient(private_key=private_key, api_url=api_url)
     print(f"Wallet: {client.eoa_address}")
     print(f"Proxy wallet: {client.proxy_wallet}")
@@ -83,9 +85,10 @@ async def subscribe_to_positions():
         print("Error: PRIVATE_KEY environment variable is required")
         sys.exit(1)
 
-    api_url = os.environ.get("API_URL", "https://server-graphql-dev.up.railway.app/query")
+    # Prefer new env-based config; keep API_URL as a backward-compatible alias.
+    api_url = os.environ.get("LUME_API_URL") or os.environ.get("API_URL")
 
-    print(f"Connecting to {api_url}...")
+    print(f"Connecting to {api_url or '(default from LUME_ENV)'}...")
     client = LumeClient(private_key=private_key, api_url=api_url)
     print(f"Wallet: {client.eoa_address}")
     print()

@@ -8,6 +8,7 @@ dependencies = [
     "web3>=7.0.0",
     "eth-account>=0.13.0",
     "requests>=2.32.0",
+    "python-dotenv>=1.0.1",
     "websockets>=12.0",
 ]
 
