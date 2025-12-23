@@ -1,6 +1,4 @@
 """Main client for Lume Market Maker."""
-
-from decimal import Decimal
 from typing import AsyncIterator, Optional
 
 from lume_market_maker.constants import (
@@ -350,6 +348,7 @@ class LumeClient:
                 type
                 status
                 timeInForce
+                price
                 shares
                 filledShares
                 collateralLocked
@@ -388,6 +387,103 @@ class LumeClient:
             )
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse order data from response: {e}") from e
+
+    def list_user_orders_for_market(
+        self,
+        address: str,
+        market_id: str,
+        status: str = "OPEN",
+        first: int = 100,
+    ) -> list[Order]:
+        """
+        List a user's orders for a given market.
+
+        This is primarily intended for bots to detect whether they already have
+        open orders on a market.
+
+        Args:
+            address: EOA address (checks `user(address: ...)`)
+            market_id: Market UUID
+            status: Order status filter (e.g. OPEN, PARTIALLY_FILLED, FILLED)
+            first: Page size
+
+        Returns:
+            List of Order objects (may be empty)
+
+        Raises:
+            GraphQLError: If the query fails or response can't be parsed
+        """
+        query = """
+        query($address: String!, $marketId: ID!, $status: OrderStatus, $first: Int) {
+            user(address: $address) {
+                orders(marketId: $marketId, status: $status, first: $first) {
+                    orders {
+                        id
+                        marketId
+                        outcomeId
+                        userId
+                        side
+                        type
+                        status
+                        timeInForce
+                        price
+                        shares
+                        filledShares
+                        collateralLocked
+                        eoaWallet
+                        createdAt
+                        updatedAt
+                        expiresAt
+                    }
+                }
+            }
+        }
+        """
+        variables = {
+            "address": address,
+            "marketId": market_id,
+            "status": status,
+            "first": first,
+        }
+
+        try:
+            data = self.graphql.query(query, variables)
+            orders_data = (
+                data.get("user", {})
+                .get("orders", {})
+                .get("orders", [])
+                or []
+            )
+
+            orders: list[Order] = []
+            for order_data in orders_data:
+                if not order_data or not order_data.get("id"):
+                    continue
+                orders.append(
+                    Order(
+                        id=order_data.get("id", ""),
+                        market_id=order_data.get("marketId", ""),
+                        outcome_id=order_data.get("outcomeId", ""),
+                        user_id=order_data.get("userId", ""),
+                        side=order_data.get("side", ""),
+                        type=order_data.get("type", ""),
+                        status=order_data.get("status", ""),
+                        time_in_force=order_data.get("timeInForce", ""),
+                        price=order_data.get("price", ""),
+                        shares=order_data.get("shares", ""),
+                        filled_shares=order_data.get("filledShares", ""),
+                        collateral_locked=order_data.get("collateralLocked", ""),
+                        fee_amount=order_data.get("feeAmount", ""),
+                        eoa_wallet=order_data.get("eoaWallet", ""),
+                        created_at=order_data.get("createdAt", ""),
+                        updated_at=order_data.get("updatedAt", ""),
+                        expires_at=order_data.get("expiresAt", ""),
+                    )
+                )
+
+            return orders
+        except (AttributeError, KeyError, TypeError) as e:
+            raise GraphQLError(f"Failed to parse user orders from response: {e}") from e
 
     def get_orderbook(self, market_id: str, outcome: str) -> OrderBook:
         """

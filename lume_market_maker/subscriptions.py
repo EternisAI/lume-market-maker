@@ -190,6 +190,10 @@ class SubscriptionManager:
             GraphQLError: If subscription errors
         """
         async for payload in self.ws_client.subscribe(MY_ORDER_UPDATES_SUBSCRIPTION):
+            
+            if payload.get("data", {}) is None:
+                continue
+            
             data = payload.get("data", {}).get("myOrderUpdates", {})
             if not data:
                 continue
