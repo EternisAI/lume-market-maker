@@ -7,8 +7,9 @@ This bot:
 - Starts:
   - HTTP polling of the YES/NO orderbooks (printing a compact top-of-book view)
   - Websocket subscription to myOrderUpdates
-- On fills (delta filledShares) for non-hedge orders, places an opposite-side hedge
-  order and records its id so updates for that hedge order are ignored.
+- On fills (delta filledShares), places an opposite-side order.
+  Note: fills on these opposite-side orders are also handled the same way, so the bot
+  continues to re-quote the opposite side on every fill (no "ignore hedge orders" list).
 
 Run:
   PRIVATE_KEY=... MARKET_ID=... uv run examples/market_maker.py
@@ -372,7 +373,6 @@ async def _hedge_on_fills(client: LumeClient, cfg: BotConfig, shutdown: asyncio.
     market = await asyncio.to_thread(client.get_market, cfg.market_id)
     outcome_id_to_label = {o.id: o.label.upper() for o in market.outcomes}
 
-    hedge_order_ids: set[str] = set()
     last_filled_by_order_id: dict[str, float] = {}
     pending_by_outcome: dict[str, PendingFill] = {"YES": PendingFill(), "NO": PendingFill()}
 
@@ -404,11 +404,6 @@ async def _hedge_on_fills(client: LumeClient, cfg: BotConfig, shutdown: asyncio.
 
         order = update.order
         if order.market_id != cfg.market_id:
-            return
-
-        if order.id in hedge_order_ids:
-            # We still track filled progress to prevent unbounded deltas if we ever stop ignoring.
-            last_filled_by_order_id[order.id] = _num_str_to_float(order.filled_shares)
             return
 
         if order.side.upper() != "BUY":
@@ -488,7 +483,6 @@ async def _hedge_on_fills(client: LumeClient, cfg: BotConfig, shutdown: asyncio.
                 ),
             )
             hedge_id = resp["id"]
-            hedge_order_ids.add(hedge_id)
             pending.consume(size)
             print(f"[HEDGE] placed id={hedge_id}")
         except (GraphQLError, RuntimeError, ValueError, KeyError) as e:
