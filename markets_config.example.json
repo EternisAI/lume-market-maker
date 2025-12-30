@@ -1,0 +1,22 @@
+[
+  {
+    "market_id": "1ade266b-3256-424f-abab-7447ee35dd46",
+    "mid_price": 0.10,
+    "total_amount": 200
+  },
+  {
+    "market_id": "48b0117e-62fe-4b9b-bbed-9fb73765d907",
+    "mid_price": 0.45,
+    "total_amount": 200
+  },
+  {
+    "market_id": "579e4831-d905-4f9d-96ec-92ccb5e1bc66",
+    "mid_price": 0.10,
+    "total_amount": 200
+  },
+  {
+    "market_id": "3797f3b0-908d-4918-a527-d3d9e04b3c58",
+    "mid_price": 0.35,
+    "total_amount": 200
+  }
+]

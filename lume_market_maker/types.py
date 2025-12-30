@@ -73,6 +73,7 @@ class Market:
 
     id: str
     outcomes: list[Outcome]
+    condition_id: str | None = None
     slug: str | None = None
     question: str | None = None
     is_neg_risk: bool | None = None
