@@ -164,6 +164,7 @@ class LumeClient:
         query($id: ID!) {
             market(id: $id) {
                 id
+                conditionId
                 outcomes {
                     id
                     label
@@ -202,6 +203,7 @@ class LumeClient:
             return Market(
                 id=market_data["id"],
                 outcomes=outcomes,
+                condition_id=market_data.get("conditionId"),
                 is_neg_risk=is_neg_risk,
             )
         except (KeyError, TypeError) as e:

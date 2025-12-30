@@ -1,0 +1,171 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "owner", "type": "address" },
+      { "name": "id", "type": "uint256" }
+    ],
+    "name": "balanceOf",
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "owners", "type": "address[]" },
+      { "name": "ids", "type": "uint256[]" }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [{ "name": "", "type": "uint256[]" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "collateralToken", "type": "address" },
+      { "name": "parentCollectionId", "type": "bytes32" },
+      { "name": "conditionId", "type": "bytes32" },
+      { "name": "partition", "type": "uint256[]" },
+      { "name": "amount", "type": "uint256" }
+    ],
+    "name": "mergePositions",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "collateralToken", "type": "address" },
+      { "name": "parentCollectionId", "type": "bytes32" },
+      { "name": "conditionId", "type": "bytes32" },
+      { "name": "partition", "type": "uint256[]" },
+      { "name": "amount", "type": "uint256" }
+    ],
+    "name": "splitPosition",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "collateralToken", "type": "address" },
+      { "name": "parentCollectionId", "type": "bytes32" },
+      { "name": "conditionId", "type": "bytes32" },
+      { "name": "indexSets", "type": "uint256[]" }
+    ],
+    "name": "redeemPositions",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "collateralToken", "type": "address" },
+      { "name": "collectionId", "type": "bytes32" }
+    ],
+    "name": "getPositionId",
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "oracle", "type": "address" },
+      { "name": "questionId", "type": "bytes32" },
+      { "name": "outcomeSlotCount", "type": "uint256" }
+    ],
+    "name": "getConditionId",
+    "outputs": [{ "name": "", "type": "bytes32" }],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "parentCollectionId", "type": "bytes32" },
+      { "name": "conditionId", "type": "bytes32" },
+      { "name": "indexSet", "type": "uint256" }
+    ],
+    "name": "getCollectionId",
+    "outputs": [{ "name": "", "type": "bytes32" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [{ "name": "conditionId", "type": "bytes32" }],
+    "name": "getOutcomeSlotCount",
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      { "name": "owner", "type": "address" },
+      { "name": "operator", "type": "address" }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [{ "name": "", "type": "bool" }],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "operator", "type": "address" },
+      { "name": "approved", "type": "bool" }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "from", "type": "address" },
+      { "name": "to", "type": "address" },
+      { "name": "id", "type": "uint256" },
+      { "name": "value", "type": "uint256" },
+      { "name": "data", "type": "bytes" }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "from", "type": "address" },
+      { "name": "to", "type": "address" },
+      { "name": "ids", "type": "uint256[]" },
+      { "name": "values", "type": "uint256[]" },
+      { "name": "data", "type": "bytes" }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

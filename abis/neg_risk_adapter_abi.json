@@ -1,0 +1,14 @@
+[
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "_conditionId", "type": "bytes32" },
+      { "name": "_amount", "type": "uint256" }
+    ],
+    "name": "mergePositions",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
