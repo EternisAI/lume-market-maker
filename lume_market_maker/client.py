@@ -605,6 +605,70 @@ class LumeClient:
         except (KeyError, TypeError) as e:
             raise GraphQLError(f"Failed to parse cancel order response: {e}") from e
 
+    def cancel_my_orders_by_market(self, market_id: str) -> dict:
+        """
+        Cancel all user's open orders for a specific market.
+
+        Args:
+            market_id: Market UUID
+
+        Returns:
+            Dict with cancelledOrders list and cancelledCount
+
+        Raises:
+            GraphQLError: If the mutation fails
+        """
+        mutation = """
+        mutation($marketId: ID!) {
+            cancelMyOrdersByMarket(marketId: $marketId) {
+                cancelledOrders {
+                    id
+                    status
+                }
+                cancelledCount
+            }
+        }
+        """
+        variables = {"marketId": market_id}
+
+        try:
+            data = self.graphql.mutate(mutation, variables)
+            return data["cancelMyOrdersByMarket"]
+        except (KeyError, TypeError) as e:
+            raise GraphQLError(f"Failed to cancel orders by market: {e}") from e
+
+    def cancel_my_orders_by_event(self, event_id: str) -> dict:
+        """
+        Cancel all user's open orders for a specific event (all markets in event).
+
+        Args:
+            event_id: Event UUID
+
+        Returns:
+            Dict with cancelledOrders list and cancelledCount
+
+        Raises:
+            GraphQLError: If the mutation fails
+        """
+        mutation = """
+        mutation($eventId: ID!) {
+            cancelMyOrdersByEvent(eventId: $eventId) {
+                cancelledOrders {
+                    id
+                    status
+                }
+                cancelledCount
+            }
+        }
+        """
+        variables = {"eventId": event_id}
+
+        try:
+            data = self.graphql.mutate(mutation, variables)
+            return data["cancelMyOrdersByEvent"]
+        except (KeyError, TypeError) as e:
+            raise GraphQLError(f"Failed to cancel orders by event: {e}") from e
+
     def get_all_events(
         self,
         first: Optional[int] = None,
